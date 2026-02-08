@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloxd.io Music Converter - Optimized</title>
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.28/build/Midi.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .upload-section {
+            background: #f8f9fa;
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 30px;
+        }
+        
+        .upload-section:hover {
+            background: #e9ecef;
+            border-color: #764ba2;
+        }
+        
+        .upload-section.dragover {
+            background: #e0e7ff;
+            border-color: #4f46e5;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
+        .upload-section h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .upload-section p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .options {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .option-group {
+            margin-bottom: 20px;
+        }
+        
+        .option-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .option-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .option-group select,
+        .option-group input[type="range"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+        
+        .option-group input[type="range"] {
+            padding: 0;
+        }
+        
+        .range-value {
+            display: inline-block;
+            margin-left: 10px;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .info-box {
+            background: #e0e7ff;
+            border-left: 4px solid #667eea;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .info-box h3 {
+            color: #4f46e5;
+            margin-bottom: 8px;
+        }
+        
+        .info-box p {
+            color: #4b5563;
+            line-height: 1.6;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+        
+        .output-section {
+            display: none;
+        }
+        
+        .output-section.visible {
+            display: block;
+        }
+        
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            position: relative;
+            font-family: 'Courier New', monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        
+        .copy-btn:hover {
+            background: #764ba2;
+        }
+        
+        .copy-btn.copied {
+            background: #10b981;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            color: #6b7280;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .progress-bar.visible {
+            display: block;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            color: #92400e;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .upload-section {
+                padding: 40px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Bloxd.io Music Converter</h1>
+            <p>Optimized MIDI to Bloxd.io converter with advanced timing and quality</p>
+        </div>
+        
+        <div class="content">
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-icon">📁</div>
+                <h2>Drop MIDI file here or click to browse</h2>
+                <p>Supports .mid and .midi files</p>
+                <input type="file" id="fileInput" class="file-input" accept=".mid,.midi">
+                <button class="btn" onclick="document.getElementById('fileInput').click()">Choose File</button>
+            </div>
+            
+            <div id="fileInfo" style="display: none;" class="info-box">
+                <h3>📄 File Loaded</h3>
+                <p id="fileName"></p>
+            </div>
+            
+            <div class="options">
+                <h2 style="margin-bottom: 20px;">⚙️ Conversion Settings</h2>
+                
+                <div class="option-group">
+                    <label>Format Style:</label>
+                    <select id="formatStyle">
+                        <option value="simple">Simple (p/r functions - Fastest playback)</option>
+                        <option value="compact" selected>Compact (Encoded - Smaller code)</option>
+                    </select>
+                </div>
+                
+                <div class="option-group">
+                    <label>Sound Quality:</label>
+                    <select id="soundQuality">
+                        <option value="single">Single Sound (Fastest)</option>
+                        <option value="layered" selected>Layered Sounds (Better quality)</option>
+                    </select>
+                </div>
+                
+                <div class="option-group">
+                    <label>Timing Precision: <span class="range-value" id="precisionValue">20 ticks/sec</span></label>
+                    <input type="range" id="timingPrecision" min="10" max="20" value="20" step="1">
+                </div>
+                
+                <div class="option-group">
+                    <label>Note Duration Adjustment: <span class="range-value" id="durationValue">1.0x</span></label>
+                    <input type="range" id="durationAdjust" min="0.5" max="2" value="1" step="0.1">
+                </div>
+                
+                <button class="btn" id="convertBtn" disabled onclick="convertFile()">Convert to Bloxd.io</button>
+            </div>
+            
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="output-section" id="outputSection">
+                <h2 style="margin-bottom: 20px;">📊 Conversion Results</h2>
+                
+                <div class="stats" id="stats"></div>
+                
+                <div class="warning" id="warningBox" style="display: none;">
+                    <strong>⚠️ Warning:</strong> <span id="warningText"></span>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('code')">World Code</button>
+                    <button class="tab" onclick="switchTab('instructions')">Instructions</button>
+                </div>
+                
+                <div class="tab-content active" id="codeTab">
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode('worldCode')">Copy</button>
+                        <pre id="worldCode"></pre>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="instructionsTab">
+                    <div class="info-box">
+                        <h3>🎮 How to Use in Bloxd.io</h3>
+                        <ol style="margin-left: 20px; line-height: 1.8;">
+                            <li>Join a Bloxd.io game and open the "World Code" editor</li>
+                            <li>Clear any existing code</li>
+                            <li>Click "Copy" on the World Code tab above</li>
+                            <li>Paste the entire code into the World Code editor</li>
+                            <li>Save and reload the world</li>
+                            <li>The music will start playing automatically!</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="info-box">
+                        <h3>💡 Tips for Best Results</h3>
+                        <ul style="margin-left: 20px; line-height: 1.8;">
+                            <li><strong>Simple format:</strong> Better for short songs, more accurate playback</li>
+                            <li><strong>Compact format:</strong> Better for long songs, smaller code size</li>
+                            <li><strong>Layered sounds:</strong> Richer audio but more processing</li>
+                            <li><strong>Timing precision:</strong> Higher = more accurate but larger code</li>
+                            <li><strong>Note duration:</strong> Adjust if notes sound too short/long</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let midiData = null;
+        let convertedData = null;
+        
+        // File upload handling
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+        const convertBtn = document.getElementById('convertBtn');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        
+        // Drag and drop
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+        
+        // Range input value display
+        document.getElementById('timingPrecision').addEventListener('input', (e) => {
+            document.getElementById('precisionValue').textContent = e.target.value + ' ticks/sec';
+        });
+        
+        document.getElementById('durationAdjust').addEventListener('input', (e) => {
+            document.getElementById('durationValue').textContent = parseFloat(e.target.value).toFixed(1) + 'x';
+        });
+        
+        async function handleFile(file) {
+            if (!file.name.match(/\.(mid|midi)$/i)) {
+                alert('Please upload a MIDI file (.mid or .midi)');
+                return;
+            }
+            
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                midiData = new Midi(arrayBuffer);
+                
+                fileName.textContent = `${file.name} - ${midiData.tracks.length} tracks, ${midiData.duration.toFixed(2)}s duration`;
+                fileInfo.style.display = 'block';
+                convertBtn.disabled = false;
+                
+            } catch (error) {
+                alert('Error loading MIDI file: ' + error.message);
+                console.error(error);
+            }
+        }
+        
+        function convertFile() {
+            if (!midiData) return;
+            
+            const formatStyle = document.getElementById('formatStyle').value;
+            const soundQuality = document.getElementById('soundQuality').value;
+            const timingPrecision = parseInt(document.getElementById('timingPrecision').value);
+            const durationAdjust = parseFloat(document.getElementById('durationAdjust').value);
+            
+            showProgress(true);
+            setProgress(10);
+            
+            setTimeout(() => {
+                try {
+                    const result = processMidi(midiData, {
+                        formatStyle,
+                        soundQuality,
+                        timingPrecision,
+                        durationAdjust
+                    });
+                    
+                    setProgress(90);
+                    displayResults(result);
+                    setProgress(100);
+                    
+                    setTimeout(() => showProgress(false), 500);
+                    
+                } catch (error) {
+                    alert('Error converting MIDI: ' + error.message);
+                    console.error(error);
+                    showProgress(false);
+                }
+            }, 100);
+        }
+        
+        function processMidi(midi, options) {
+            const notes = [];
+            
+            // Extract all notes from all tracks
+            midi.tracks.forEach(track => {
+                track.notes.forEach(note => {
+                    notes.push({
+                        time: note.time,
+                        midi: note.midi,
+                        duration: note.duration * options.durationAdjust,
+                        velocity: note.velocity
+                    });
+                });
+            });
+            
+            // Sort by time
+            notes.sort((a, b) => a.time - b.time);
+            
+            setProgress(30);
+            
+            // Convert to game format
+            if (options.formatStyle === 'simple') {
+                return convertToSimpleFormat(notes, options);
+            } else {
+                return convertToCompactFormat(notes, options);
+            }
+        }
+        
+        function midiToHz(midi) {
+            return 440 * Math.pow(2, (midi - 69) / 12);
+        }
+        
+        function getPitchRate(targetHz, baseHz = 260.79) {
+            return targetHz / baseHz;
+        }
+        
+        function convertToSimpleFormat(notes, options) {
+            const ticksPerSecond = options.timingPrecision;
+            let code = `// Auto-generated music code
+// ${notes.length} notes, ${options.soundQuality} quality
+
+let musicQueue = [];
+let currentTime = 0;
+let gameStartTime = Date.now();
+
+function resetMusic() {
+    musicQueue = [];
+    currentTime = 0;
+    gameStartTime = Date.now();
+}
+
+function p(instrument, pitch, noteLength) {
+    musicQueue.push({
+        type: 'play',
+        instrument: instrument,
+        pitch: pitch,
+        executeTime: currentTime
+    });
+    currentTime += noteLength * 1000;
+}
+
+function r(timeInSeconds) {
+    currentTime += timeInSeconds * 1000;
+}
+
+tick = (ms) => {
+    const elapsed = Date.now() - gameStartTime;
+    while (musicQueue.length > 0 && musicQueue[0].executeTime <= elapsed) {
+        const item = musicQueue.shift();
+        if (item.type === 'play') {
+            api.broadcastSound(item.instrument, 0.8, item.pitch);
+        }
+    }
+};
+
+resetMusic();
+`;
+            
+            setProgress(50);
+            
+            let lastTime = 0;
+            notes.forEach((note, i) => {
+                const delay = note.time - lastTime;
+                if (delay > 0) {
+                    code += `r(${delay.toFixed(3)});`;
+                }
+                
+                const hz = midiToHz(note.midi);
+                const pitchRate = getPitchRate(hz);
+                const duration = Math.min(note.duration, 0.5); // Cap duration
+                
+                code += `p('harp_pling',${pitchRate.toFixed(3)},${duration.toFixed(3)});`;
+                
+                lastTime = note.time;
+                
+                if (i % 50 === 0) {
+                    code += '\n';
+                }
+                
+                if (i % 100 === 0) {
+                    setProgress(50 + (i / notes.length) * 40);
+                }
+            });
+            
+            return {
+                code: code,
+                noteCount: notes.length,
+                duration: notes[notes.length - 1].time,
+                codeSize: code.length
+            };
+        }
+        
+        function convertToCompactFormat(notes, options) {
+            // Compact encoding using the optimized system
+            const charMap = "⁰¹²³⁴⁵⁶⁷⁸⁹ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐⁿᵒᵖʳˢᵗᵘᵛʷˣʸᶻᵅᵝᵞᵟ₀₁₂₃₄₅₆₇₈₉ₐₑₕᵢₖₗₘₙₒₚᵣₛₜᵤᵥₓ​‌‍ ¡¢£¤§©¨ª«¬­®¯\ufeff︀︁︂︃︄︅︆︇︈︉︊︋︌︍";
+            
+            const soundsData = [];
+            const delaysData = [];
+            const notesData = [];
+            const volumesData = [];
+            
+            let lastTick = 0;
+            const ticksPerSecond = options.timingPrecision;
+            
+            setProgress(50);
+            
+            notes.forEach((note, i) => {
+                const currentTick = Math.round(note.time * ticksPerSecond);
+                const delay = Math.min(currentTick - lastTick, charMap.length - 1);
+                
+                const hz = midiToHz(note.midi);
+                const noteIndex = Math.min(Math.round((note.midi - 21)), charMap.length - 1);
+                
+                soundsData.push('0'); // harp_pling index
+                delaysData.push(charMap[delay]);
+                notesData.push(charMap[noteIndex]);
+                volumesData.push(note.velocity > 0.5 ? '1' : '0');
+                
+                lastTick = currentTick;
+                
+                if (i % 100 === 0) {
+                    setProgress(50 + (i / notes.length) * 40);
+                }
+            });
+            
+            const code = `// Auto-generated compact music code
+// ${notes.length} notes encoded
+
+this.S = {
+    batchExecutors: [],
+    currentTick: 0,
+    tasks: {},
+    reset: function() {
+        this.currentTick = 0;
+        this.tasks = {};
+    },
+    init: function(maxTasksPerTick = 50) {
+        for (let i = 1; i <= maxTasksPerTick; i++)
+            this.batchExecutors[i - 1] = new Function("t", Array.from({ length: i }, (_, j) => \`t[\${j}]();\`).join(''));
+        this.reset();
+    },
+    setTimeout: function(j, delay = 1) {
+        const physicalTargetTick = this.currentTick + delay;
+        if (!this.tasks[physicalTargetTick]) this.tasks[physicalTargetTick] = [];
+        this.tasks[physicalTargetTick].push(j);
+        return { tickId: physicalTargetTick, taskId: this.tasks[physicalTargetTick].length - 1 };
+    }
+};
+S.init();
+
+tick = () => {
+    const tasksForCurrentTick = S.tasks[S.currentTick];
+    if (tasksForCurrentTick) {
+        const len = tasksForCurrentTick.length;
+        const tasksNum = Math.min(len, 50);
+        S.batchExecutors[tasksNum - 1](tasksForCurrentTick);
+        delete S.tasks[S.currentTick];
+    }
+    S.currentTick++;
+};
+
+class MusicPlayer {
+    constructor() {
+        this.charMap = "${charMap}";
+        this.charToIndex = {};
+        for (let i = 0; i < this.charMap.length; i++) {
+            this.charToIndex[this.charMap[i]] = i;
+        }
+        this.basePitch = 260.79;
+    }
+    
+    play(sounds, delays, notes, volumes) {
+        S.reset();
+        let tick = 0;
+        
+        for (let i = 0; i < sounds.length; i++) {
+            const delay = this.charToIndex[delays[i]] || 0;
+            const noteIdx = this.charToIndex[notes[i]] || 0;
+            const volume = volumes[i] === '1' ? 0.8 : 0.5;
+            
+            tick += delay;
+            
+            const targetHz = 440.0 * Math.pow(2, (noteIdx + 21 - 69) / 12);
+            const rate = targetHz / this.basePitch;
+            
+            S.setTimeout(() => api.broadcastSound('harp_pling', volume, rate), tick);
+        }
+    }
+}
+
+const player = new MusicPlayer();
+const sounds = "${soundsData.join('')}";
+const delays = "${delaysData.join('')}";
+const notes = "${notesData.join('')}";
+const volumes = "${volumesData.join('')}";
+
+player.play(sounds, delays, notes, volumes);
+`;
+            
+            return {
+                code: code,
+                noteCount: notes.length,
+                duration: notes[notes.length - 1].time,
+                codeSize: code.length
+            };
+        }
+        
+        function displayResults(result) {
+            convertedData = result;
+            
+            // Show stats
+            const stats = document.getElementById('stats');
+            stats.innerHTML = `
+                <div class="stat-card">
+                    <div class="value">${result.noteCount}</div>
+                    <div class="label">Notes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">${result.duration.toFixed(1)}s</div>
+                    <div class="label">Duration</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">${(result.codeSize / 1024).toFixed(1)}KB</div>
+                    <div class="label">Code Size</div>
+                </div>
+            `;
+            
+            // Show warning if code is large
+            const warningBox = document.getElementById('warningBox');
+            const warningText = document.getElementById('warningText');
+            if (result.codeSize > 50000) {
+                warningText.textContent = 'Large code size! Consider using Compact format or reducing timing precision.';
+                warningBox.style.display = 'block';
+            } else {
+                warningBox.style.display = 'none';
+            }
+            
+            // Display code
+            document.getElementById('worldCode').textContent = result.code;
+            
+            // Show output section
+            document.getElementById('outputSection').classList.add('visible');
+            document.getElementById('outputSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+        
+        function copyCode(elementId) {
+            const code = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+        
+        function showProgress(show) {
+            document.getElementById('progressBar').classList.toggle('visible', show);
+        }
+        
+        function setProgress(percent) {
+            document.getElementById('progressFill').style.width = percent + '%';
+        }
+    </script>
+</body>
+</html>
